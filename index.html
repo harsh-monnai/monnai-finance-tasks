@@ -400,7 +400,9 @@
 
   /* ── Team Registry ── */
   .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
-  .team-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+  .team-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); position: relative; }
+  .team-card-delete { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--gray-300); font-size: 16px; cursor: pointer; line-height: 1; padding: 2px 4px; border-radius: 4px; transition: color 0.15s, background 0.15s; }
+  .team-card-delete:hover { color: var(--red); background: #fff5f5; }
   .team-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--navy); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; margin-bottom: 10px; }
   .team-name { font-size: 13px; font-weight: 600; color: var(--gray-900); }
   .team-role { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
@@ -554,6 +556,7 @@
             <th onclick="sortBy('project')">Project</th>
             <th onclick="sortBy('assignee')">Assignee</th>
             <th onclick="sortBy('region')">Region</th>
+            <th onclick="sortBy('startDate')">Start Date <span class="sort-icon">↕</span></th>
             <th onclick="sortBy('dueDate')">Due Date <span class="sort-icon">↕</span></th>
             <th onclick="sortBy('status')">Status</th>
             <th onclick="sortBy('area')">Area</th>
@@ -580,7 +583,10 @@
 
   <!-- ── TEAM ── -->
   <div id="view-team" class="view">
-    <div style="margin-bottom:16px; font-size:18px; font-weight:700; color:var(--navy)">Team Registry</div>
+    <div style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+      <div style="font-size:18px; font-weight:700; color:var(--navy)">Team Registry</div>
+      <button class="btn-primary" onclick="openAddUserModal()">+ Add User</button>
+    </div>
     <div class="team-grid" id="teamGrid"></div>
   </div>
 
@@ -604,7 +610,7 @@
         <div class="step-content">
           <h3>Set up the Tasks DB tab headers</h3>
           <p>In the <strong>Tasks DB</strong> tab, paste these headers in Row 1 (A1 through K1):</p>
-          <div class="code-block">Task ID	Task Name	Project	Assignee	Region	Due Date	Status	Area	Vendor Involved	Priority	Notes</div>
+          <div class="code-block">Task ID	Task Name	Project	Assignee	Region	Start Date	Due Date	Status	Area	Vendor Involved	Priority	Notes</div>
         </div>
       </div>
 
@@ -679,38 +685,40 @@
         <div class="step-content">
           <h3>Dashboard formulas for your Google Sheet</h3>
           <p>Copy these formulas into the <strong>Dashboard</strong> tab of your Google Sheet:</p>
-          <div class="code-block">-- Cell B2: Total Tasks
+          <div class="code-block">-- Column order: A=Task ID, B=Task Name, C=Project, D=Assignee, E=Region, F=Start Date, G=Due Date, H=Status, I=Area, J=Vendor, K=Priority, L=Notes
+
+-- Cell B2: Total Tasks
 =COUNTA('Tasks DB'!A2:A)
 
 -- Cell B3: Not Started
-=COUNTIF('Tasks DB'!G2:G,"Not Started")
+=COUNTIF('Tasks DB'!H2:H,"Not Started")
 
 -- Cell B4: In Progress
-=COUNTIF('Tasks DB'!G2:G,"In Progress")
+=COUNTIF('Tasks DB'!H2:H,"In Progress")
 
 -- Cell B5: Done
-=COUNTIF('Tasks DB'!G2:G,"Done")
+=COUNTIF('Tasks DB'!H2:H,"Done")
 
 -- Cell B6: Blocked
-=COUNTIF('Tasks DB'!G2:G,"Blocked")
+=COUNTIF('Tasks DB'!H2:H,"Blocked")
 
 -- Cell B7: Overdue (past due date, not Done)
-=COUNTIFS('Tasks DB'!F2:F,"<"&TODAY(),'Tasks DB'!G2:G,"<>Done",'Tasks DB'!F2:F,"<>")
+=COUNTIFS('Tasks DB'!G2:G,"<"&TODAY(),'Tasks DB'!H2:H,"<>Done",'Tasks DB'!G2:G,"<>")
 
 -- Cell B8: High Priority
-=COUNTIF('Tasks DB'!J2:J,"High")
+=COUNTIF('Tasks DB'!K2:K,"High")
 
 -- Tasks by Assignee (put in D2, drag down for each person)
 =COUNTIF('Tasks DB'!D2:D, C2)
 
 -- Tasks by Area (put in G2, drag down)
-=COUNTIF('Tasks DB'!H2:H, F2)
+=COUNTIF('Tasks DB'!I2:I, F2)
 
 -- Tasks by Region (put in J2, drag down)
 =COUNTIF('Tasks DB'!E2:E, I2)
 
 -- Sprint View tab: Current sprint tasks (not Done, High or Medium priority)
-=FILTER('Tasks DB'!A2:K, ('Tasks DB'!G2:G<>"Done")*('Tasks DB'!J2:J<>"Low"))</div>
+=FILTER('Tasks DB'!A2:L, ('Tasks DB'!H2:H<>"Done")*('Tasks DB'!K2:K<>"Low"))</div>
         </div>
       </div>
 
@@ -752,13 +760,7 @@
         <div class="form-group">
           <label class="form-label">Assignee</label>
           <select class="form-select" id="f-assignee">
-            <option>Harsh</option>
-            <option>Cindy</option>
-            <option>Ravish</option>
-            <option>SK</option>
-            <option>Karthik</option>
-            <option>Pierre</option>
-            <option>Tapan</option>
+            <!-- populated dynamically from TEAM by refreshAssigneeDropdown() -->
           </select>
         </div>
         <div class="form-group">
@@ -770,6 +772,10 @@
             <option>Indonesia</option>
             <option>US</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Start Date</label>
+          <input class="form-input" type="date" id="f-startDate">
         </div>
         <div class="form-group">
           <label class="form-label">Due Date</label>
@@ -849,6 +855,46 @@
   </div>
 </div>
 
+<!-- ── Add User Modal ── -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title">Add Team Member</span>
+      <button class="modal-close" onclick="closeUserModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input class="form-input" id="u-name" placeholder="e.g. Alex Kumar" oninput="autoFillFirstName()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">First Name (used as assignee) *</label>
+          <input class="form-input" id="u-firstName" placeholder="e.g. Alex">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role / Title</label>
+          <input class="form-input" id="u-role" placeholder="e.g. Finance Analyst">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Region</label>
+          <select class="form-select" id="u-region">
+            <option>India</option>
+            <option>US</option>
+            <option>Singapore</option>
+            <option>Indonesia</option>
+            <option>Global</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeUserModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveUser()">Add Member</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -863,42 +909,42 @@ let config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{"scriptUrl":"","cs
 // ─────────────────────────────────────────────
 const SEED_TASKS = [
   // ── In Progress ──
-  {id:'T-001', taskName:'Implement close calendar (preparer + reviewer timeline)', project:'Month-End Close', assignee:'Harsh', region:'Global', dueDate:'2026-04-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Goal from Cindy review: reduce close to T+10 by Aug 2026. Preparer = Harsh, Reviewer = Cindy.'},
-  {id:'T-002', taskName:'Reduce month-end close to T+10 (all final reporting to leadership)', project:'Month-End Close', assignee:'Harsh', region:'Global', dueDate:'2026-07-31', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Currently at T+15 due to G&J delays. Target T+7 by Jul 2026.'},
-  {id:'T-003', taskName:'Build AI-assisted billing automation (1.5 days → <0.5 day)', project:'Billing Automation', assignee:'Harsh', region:'Global', dueDate:'2026-09-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Goal: reduce billing cycle time. Work with Ravish and Engineering.'},
-  {id:'T-004', taskName:'Set up Ramp for invoice approvals (business owners → Finance → payment)', project:'Ramp Setup', assignee:'Harsh', region:'US', dueDate:'2026-04-30', status:'In Progress', area:'Admin', vendor:'Y', priority:'High', notes:'Cindy goal. Replace current manual invoice approval flow.'},
-  {id:'T-005', taskName:'Lead FY2025-26 India Statutory Audit (close by May 31, 2026)', project:'India Statutory Audit', assignee:'Harsh', region:'India', dueDate:'2026-05-31', status:'In Progress', area:'Tax', vendor:'Y', priority:'High', notes:'Primary contact: Aditi Shanbhag & team. No material findings target. Prior year closed in May 2025 (50 days).'},
-  {id:'T-006', taskName:'Improve Guru & Jana timeliness — set MIS delivery SLAs', project:'G&J Management', assignee:'Harsh', region:'India', dueDate:'2026-04-30', status:'In Progress', area:'Reporting', vendor:'Y', priority:'Medium', notes:'Fee revision due April 2026. Negotiate better resource. Set data delivery cut-offs.'},
-  {id:'T-007', taskName:'Continue data cost and customer margins project (top 16 customers)', project:'Customer Margins', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Work with SK (Tapan on Endpoint reports). Product and customer-level margins.'},
-  {id:'T-008', taskName:'Gain full understanding of consolidated financial models & FP&A', project:'FP&A Upskilling', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'Medium', notes:'Goal: independently manage, update and enhance FP&A models by June 2026.'},
-  {id:'T-009', taskName:'T+7 month-end close for all entities by July 2026', project:'Month-End Close', assignee:'Harsh', region:'Global', dueDate:'2026-07-31', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Team Goal 1. Pre-close checklists with G&J, Vistra, InCorp.'},
-  {id:'T-010', taskName:'ACRA Singapore FY2025 filing', project:'Singapore Compliance', assignee:'Harsh', region:'Singapore', dueDate:'2026-08-31', status:'In Progress', area:'Compliance', vendor:'Y', priority:'High', notes:'Working with Vistra. Unaudited FS filing required.'},
-  {id:'T-011', taskName:'US 1099s and Corporate Tax Returns FY2025', project:'US Compliance', assignee:'Harsh', region:'US', dueDate:'2026-04-15', status:'In Progress', area:'Tax', vendor:'Y', priority:'High', notes:'Baker Tilly. FBAR already done. 1099s + State & Federal returns.'},
-  {id:'T-012', taskName:'India New Labour Code compliance gap closure', project:'Labour Code Compliance', assignee:'Harsh', region:'India', dueDate:'2026-03-31', status:'In Progress', area:'Compliance', vendor:'Y', priority:'High', notes:'Finalize gap analysis with G&J, redline policy changes, implement before FY year-end.'},
+  {id:'T-001', taskName:'Implement close calendar (preparer + reviewer timeline)', project:'Month-End Close', assignee:'Harsh', region:'Global', startDate:'2026-04-01', dueDate:'2026-04-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Goal from Cindy review: reduce close to T+10 by Aug 2026. Preparer = Harsh, Reviewer = Cindy.'},
+  {id:'T-002', taskName:'Reduce month-end close to T+10 (all final reporting to leadership)', project:'Month-End Close', assignee:'Harsh', region:'Global', startDate:'2026-04-01', dueDate:'2026-07-31', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Currently at T+15 due to G&J delays. Target T+7 by Jul 2026.'},
+  {id:'T-003', taskName:'Build AI-assisted billing automation (1.5 days → <0.5 day)', project:'Billing Automation', assignee:'Harsh', region:'Global', startDate:'2026-05-01', dueDate:'2026-09-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Goal: reduce billing cycle time. Work with Ravish and Engineering.'},
+  {id:'T-004', taskName:'Set up Ramp for invoice approvals (business owners → Finance → payment)', project:'Ramp Setup', assignee:'Harsh', region:'US', startDate:'2026-04-01', dueDate:'2026-04-30', status:'In Progress', area:'Admin', vendor:'Y', priority:'High', notes:'Cindy goal. Replace current manual invoice approval flow.'},
+  {id:'T-005', taskName:'Lead FY2025-26 India Statutory Audit (close by May 31, 2026)', project:'India Statutory Audit', assignee:'Harsh', region:'India', startDate:'2026-03-01', dueDate:'2026-05-31', status:'In Progress', area:'Tax', vendor:'Y', priority:'High', notes:'Primary contact: Aditi Shanbhag & team. No material findings target. Prior year closed in May 2025 (50 days).'},
+  {id:'T-006', taskName:'Improve Guru & Jana timeliness — set MIS delivery SLAs', project:'G&J Management', assignee:'Harsh', region:'India', startDate:'2026-03-15', dueDate:'2026-04-30', status:'In Progress', area:'Reporting', vendor:'Y', priority:'Medium', notes:'Fee revision due April 2026. Negotiate better resource. Set data delivery cut-offs.'},
+  {id:'T-007', taskName:'Continue data cost and customer margins project (top 16 customers)', project:'Customer Margins', assignee:'Harsh', region:'Global', startDate:'2026-03-01', dueDate:'2026-06-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Work with SK (Tapan on Endpoint reports). Product and customer-level margins.'},
+  {id:'T-008', taskName:'Gain full understanding of consolidated financial models & FP&A', project:'FP&A Upskilling', assignee:'Harsh', region:'Global', startDate:'2026-04-01', dueDate:'2026-06-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'Medium', notes:'Goal: independently manage, update and enhance FP&A models by June 2026.'},
+  {id:'T-009', taskName:'T+7 month-end close for all entities by July 2026', project:'Month-End Close', assignee:'Harsh', region:'Global', startDate:'2026-04-01', dueDate:'2026-07-31', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Team Goal 1. Pre-close checklists with G&J, Vistra, InCorp.'},
+  {id:'T-010', taskName:'ACRA Singapore FY2025 filing', project:'Singapore Compliance', assignee:'Harsh', region:'Singapore', startDate:'2026-05-01', dueDate:'2026-08-31', status:'In Progress', area:'Compliance', vendor:'Y', priority:'High', notes:'Working with Vistra. Unaudited FS filing required.'},
+  {id:'T-011', taskName:'US 1099s and Corporate Tax Returns FY2025', project:'US Compliance', assignee:'Harsh', region:'US', startDate:'2026-02-01', dueDate:'2026-04-15', status:'In Progress', area:'Tax', vendor:'Y', priority:'High', notes:'Baker Tilly. FBAR already done. 1099s + State & Federal returns.'},
+  {id:'T-012', taskName:'India New Labour Code compliance gap closure', project:'Labour Code Compliance', assignee:'Harsh', region:'India', startDate:'2026-02-01', dueDate:'2026-03-31', status:'In Progress', area:'Compliance', vendor:'Y', priority:'High', notes:'Finalize gap analysis with G&J, redline policy changes, implement before FY year-end.'},
 
   // ── Not Started ──
-  {id:'T-013', taskName:'Prepare consolidated reconciliation file with folder structure', project:'Accounting Processes', assignee:'Harsh', region:'Global', dueDate:'2026-05-31', status:'Not Started', area:'Reporting', vendor:'N', priority:'High', notes:'Cindy goal: all accounting reconciliations linked with folder structure for review.'},
-  {id:'T-014', taskName:'Create preliminary close review process with variance analysis', project:'Accounting Processes', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'High', notes:'MoM variance walkthrough before sharing numbers with Pierre and Board.'},
-  {id:'T-015', taskName:'Build global compliance tracker (all regulatory deadlines across 4 countries)', project:'Compliance Tracker', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'Not Started', area:'Compliance', vendor:'N', priority:'High', notes:'Team Goal 3. Cover India (MCA, GST, TDS, FEMA, Labour), Singapore (ACRA, CPF, SDL), Indonesia (LKPM, BKPM), US (FBAR, 1099s, State VAT, Corp Tax).'},
-  {id:'T-016', taskName:'Organize all contracts (customers, data partners, vendors)', project:'Contract Management', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'Not Started', area:'Admin', vendor:'N', priority:'High', notes:'Cindy team goal. Centralized contract repository.'},
-  {id:'T-017', taskName:'Create and improve financial reporting for Management and Board', project:'Management Reporting', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'High', notes:'Includes consolidated FS, board deck numbers. Monthly entity-level review with Cindy.'},
-  {id:'T-018', taskName:'Build AI Agents for invoicing, cost accruals, margin calculations', project:'AI Finance Agents', assignee:'Harsh', region:'Global', dueDate:'2026-09-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Team Goal 2. Work with Ravish and Engineering. Track progress with Gantt Chart.'},
-  {id:'T-019', taskName:'Build interactive KPI dashboards (Revenue, Costs, Margins, Investor)', project:'KPI Dashboards', assignee:'Harsh', region:'Global', dueDate:'2026-09-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Team Goal 4. Q3 2026. Includes investor reporting dashboard.'},
-  {id:'T-020', taskName:'Improve pricing methodology factoring in Data + Server costs', project:'Pricing Methodology', assignee:'Harsh', region:'Global', dueDate:'2026-09-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Cindy team goal. Factor in all cost components for accurate margin.'},
-  {id:'T-021', taskName:'Monitor AWS costs and evaluate cost-saving initiatives', project:'AWS Cost Optimization', assignee:'Harsh', region:'US', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'Y', priority:'Medium', notes:'Cindy team goal. Ongoing monitoring.'},
-  {id:'T-022', taskName:'Data partners: notify teams of unspent minimum commitments', project:'Data Partner Management', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'Y', priority:'Medium', notes:'Proactive notifications to teams for unused minimums.'},
-  {id:'T-023', taskName:'Indonesia LKPM Q2 2026 quarterly reporting (InCorp)', project:'Indonesia Compliance', assignee:'Harsh', region:'Indonesia', dueDate:'2026-07-31', status:'Not Started', area:'Compliance', vendor:'Y', priority:'Medium', notes:'Via InCorp. Also coordinate monthly VAT returns.'},
-  {id:'T-024', taskName:'G&J fee revision negotiation (April 2026)', project:'G&J Management', assignee:'Harsh', region:'India', dueDate:'2026-04-30', status:'Not Started', area:'Admin', vendor:'Y', priority:'Medium', notes:'Negotiate better resource allocation and revised SLAs at annual fee renewal.'},
-  {id:'T-025', taskName:'Monthly entity-level financial review meeting with Cindy', project:'Month-End Close', assignee:'Cindy', region:'Global', dueDate:'2026-04-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Harsh requested: 30-min monthly session to review standalone entity financials before consolidation upload.'},
+  {id:'T-013', taskName:'Prepare consolidated reconciliation file with folder structure', project:'Accounting Processes', assignee:'Harsh', region:'Global', startDate:'2026-04-15', dueDate:'2026-05-31', status:'Not Started', area:'Reporting', vendor:'N', priority:'High', notes:'Cindy goal: all accounting reconciliations linked with folder structure for review.'},
+  {id:'T-014', taskName:'Create preliminary close review process with variance analysis', project:'Accounting Processes', assignee:'Harsh', region:'Global', startDate:'2026-05-01', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'High', notes:'MoM variance walkthrough before sharing numbers with Pierre and Board.'},
+  {id:'T-015', taskName:'Build global compliance tracker (all regulatory deadlines across 4 countries)', project:'Compliance Tracker', assignee:'Harsh', region:'Global', startDate:'2026-05-01', dueDate:'2026-06-30', status:'Not Started', area:'Compliance', vendor:'N', priority:'High', notes:'Team Goal 3. Cover India (MCA, GST, TDS, FEMA, Labour), Singapore (ACRA, CPF, SDL), Indonesia (LKPM, BKPM), US (FBAR, 1099s, State VAT, Corp Tax).'},
+  {id:'T-016', taskName:'Organize all contracts (customers, data partners, vendors)', project:'Contract Management', assignee:'Harsh', region:'Global', startDate:'2026-05-01', dueDate:'2026-06-30', status:'Not Started', area:'Admin', vendor:'N', priority:'High', notes:'Cindy team goal. Centralized contract repository.'},
+  {id:'T-017', taskName:'Create and improve financial reporting for Management and Board', project:'Management Reporting', assignee:'Harsh', region:'Global', startDate:'2026-05-01', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'High', notes:'Includes consolidated FS, board deck numbers. Monthly entity-level review with Cindy.'},
+  {id:'T-018', taskName:'Build AI Agents for invoicing, cost accruals, margin calculations', project:'AI Finance Agents', assignee:'Harsh', region:'Global', startDate:'2026-06-01', dueDate:'2026-09-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Team Goal 2. Work with Ravish and Engineering. Track progress with Gantt Chart.'},
+  {id:'T-019', taskName:'Build interactive KPI dashboards (Revenue, Costs, Margins, Investor)', project:'KPI Dashboards', assignee:'Harsh', region:'Global', startDate:'2026-07-01', dueDate:'2026-09-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Team Goal 4. Q3 2026. Includes investor reporting dashboard.'},
+  {id:'T-020', taskName:'Improve pricing methodology factoring in Data + Server costs', project:'Pricing Methodology', assignee:'Harsh', region:'Global', startDate:'2026-07-01', dueDate:'2026-09-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Cindy team goal. Factor in all cost components for accurate margin.'},
+  {id:'T-021', taskName:'Monitor AWS costs and evaluate cost-saving initiatives', project:'AWS Cost Optimization', assignee:'Harsh', region:'US', startDate:'2026-05-01', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'Y', priority:'Medium', notes:'Cindy team goal. Ongoing monitoring.'},
+  {id:'T-022', taskName:'Data partners: notify teams of unspent minimum commitments', project:'Data Partner Management', assignee:'Harsh', region:'Global', startDate:'2026-05-01', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'Y', priority:'Medium', notes:'Proactive notifications to teams for unused minimums.'},
+  {id:'T-023', taskName:'Indonesia LKPM Q2 2026 quarterly reporting (InCorp)', project:'Indonesia Compliance', assignee:'Harsh', region:'Indonesia', startDate:'2026-06-01', dueDate:'2026-07-31', status:'Not Started', area:'Compliance', vendor:'Y', priority:'Medium', notes:'Via InCorp. Also coordinate monthly VAT returns.'},
+  {id:'T-024', taskName:'G&J fee revision negotiation (April 2026)', project:'G&J Management', assignee:'Harsh', region:'India', startDate:'2026-04-01', dueDate:'2026-04-30', status:'Not Started', area:'Admin', vendor:'Y', priority:'Medium', notes:'Negotiate better resource allocation and revised SLAs at annual fee renewal.'},
+  {id:'T-025', taskName:'Monthly entity-level financial review meeting with Cindy', project:'Month-End Close', assignee:'Cindy', region:'Global', startDate:'2026-04-01', dueDate:'2026-04-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Harsh requested: 30-min monthly session to review standalone entity financials before consolidation upload.'},
 
   // ── Done ──
-  {id:'T-026', taskName:'RBI FEMA Compounding Application — closed', project:'FEMA Compounding', assignee:'Harsh', region:'India', dueDate:'2026-03-31', status:'Done', area:'Compliance', vendor:'Y', priority:'High', notes:'FC-GPR compounding under FEMA 1999. Coordinated with G&J and RBI. Fee payment completed March 2026. First-of-its-kind for Monnai.'},
-  {id:'T-027', taskName:'Funding Due Diligence — Motiv Partners (Oct–Dec 2025)', project:'Funding DD', assignee:'Harsh', region:'Global', dueDate:'2025-12-31', status:'Done', area:'Admin', vendor:'Y', priority:'High', notes:'Coordinated Baker Tilly (US), Chandihok & KPMG (India). Responded to most queries within 24 hours. Positive feedback from Pierre.'},
-  {id:'T-028', taskName:'India Statutory Audit FY2024 (closed May 2025)', project:'India Statutory Audit', assignee:'Harsh', region:'India', dueDate:'2025-05-31', status:'Done', area:'Tax', vendor:'Y', priority:'High', notes:'Closed within 50 days of FY end. Prior year had taken until September. Tax refund of INR 32 Lakhs received.'},
-  {id:'T-029', taskName:'India Health Insurance migration to Private TPA', project:'HR Operations', assignee:'Harsh', region:'India', dueDate:'2026-03-31', status:'Done', area:'HR', vendor:'Y', priority:'Medium', notes:'Moved from Government insurer to Private TPA with portal access, self-serve, wider hospital network, annual health checkups.'},
-  {id:'T-030', taskName:'ROC Registered Office shifting (Surat to Bangalore)', project:'MCA Compliance', assignee:'Harsh', region:'India', dueDate:'2026-03-31', status:'Done', area:'Legal', vendor:'N', priority:'Medium', notes:'GSC-based GNL-1 filings with ROC. Also managed layoffs, vacating physical office, selling assets, acquiring virtual office.'},
-  {id:'T-031', taskName:'GSTR-9/9C annual GST returns FY2024-25', project:'India Tax Compliance', assignee:'Harsh', region:'India', dueDate:'2025-12-31', status:'Done', area:'Tax', vendor:'Y', priority:'High', notes:'Actuarial valuations for Gratuity and Leave Encashment also completed.'},
-  {id:'T-032', taskName:'Indonesia monthly VAT returns and LKPM Q3/Q4 2025', project:'Indonesia Compliance', assignee:'Harsh', region:'Indonesia', dueDate:'2025-12-31', status:'Done', area:'Compliance', vendor:'Y', priority:'Medium', notes:'Via InCorp. All quarterly LKPM filings and monthly VAT payments current.'},
+  {id:'T-026', taskName:'RBI FEMA Compounding Application — closed', project:'FEMA Compounding', assignee:'Harsh', region:'India', startDate:'2025-11-01', dueDate:'2026-03-31', status:'Done', area:'Compliance', vendor:'Y', priority:'High', notes:'FC-GPR compounding under FEMA 1999. Coordinated with G&J and RBI. Fee payment completed March 2026. First-of-its-kind for Monnai.'},
+  {id:'T-027', taskName:'Funding Due Diligence — Motiv Partners (Oct–Dec 2025)', project:'Funding DD', assignee:'Harsh', region:'Global', startDate:'2025-10-01', dueDate:'2025-12-31', status:'Done', area:'Admin', vendor:'Y', priority:'High', notes:'Coordinated Baker Tilly (US), Chandihok & KPMG (India). Responded to most queries within 24 hours. Positive feedback from Pierre.'},
+  {id:'T-028', taskName:'India Statutory Audit FY2024 (closed May 2025)', project:'India Statutory Audit', assignee:'Harsh', region:'India', startDate:'2025-03-01', dueDate:'2025-05-31', status:'Done', area:'Tax', vendor:'Y', priority:'High', notes:'Closed within 50 days of FY end. Prior year had taken until September. Tax refund of INR 32 Lakhs received.'},
+  {id:'T-029', taskName:'India Health Insurance migration to Private TPA', project:'HR Operations', assignee:'Harsh', region:'India', startDate:'2025-12-01', dueDate:'2026-03-31', status:'Done', area:'HR', vendor:'Y', priority:'Medium', notes:'Moved from Government insurer to Private TPA with portal access, self-serve, wider hospital network, annual health checkups.'},
+  {id:'T-030', taskName:'ROC Registered Office shifting (Surat to Bangalore)', project:'MCA Compliance', assignee:'Harsh', region:'India', startDate:'2026-01-01', dueDate:'2026-03-31', status:'Done', area:'Legal', vendor:'N', priority:'Medium', notes:'GSC-based GNL-1 filings with ROC. Also managed layoffs, vacating physical office, selling assets, acquiring virtual office.'},
+  {id:'T-031', taskName:'GSTR-9/9C annual GST returns FY2024-25', project:'India Tax Compliance', assignee:'Harsh', region:'India', startDate:'2025-10-01', dueDate:'2025-12-31', status:'Done', area:'Tax', vendor:'Y', priority:'High', notes:'Actuarial valuations for Gratuity and Leave Encashment also completed.'},
+  {id:'T-032', taskName:'Indonesia monthly VAT returns and LKPM Q3/Q4 2025', project:'Indonesia Compliance', assignee:'Harsh', region:'Indonesia', startDate:'2025-07-01', dueDate:'2025-12-31', status:'Done', area:'Compliance', vendor:'Y', priority:'Medium', notes:'Via InCorp. All quarterly LKPM filings and monthly VAT payments current.'},
 ];
 
 // ─────────────────────────────────────────────
@@ -932,17 +978,36 @@ function nextId() {
 }
 
 // ─────────────────────────────────────────────
-//  TEAM DATA
+//  TEAM DATA  (mutable — stored in localStorage)
 // ─────────────────────────────────────────────
-const TEAM = [
-  {name:'Harsh Dhanuka', role:'Finance Manager', region:'India', initials:'HD'},
-  {name:'Cindy Yang', role:'VP Finance', region:'US', initials:'CY'},
-  {name:'Ravish', role:'India Operations', region:'India', initials:'RV'},
-  {name:'SK', role:'Data Engineering Lead', region:'India', initials:'SK'},
-  {name:'Karthik', role:'Sales / AR', region:'India', initials:'KT'},
-  {name:'Pierre', role:'CEO', region:'US', initials:'PR'},
-  {name:'Tapan', role:'Engineering', region:'India', initials:'TP'},
+const TEAM_KEY = 'monnaiFinanceTeam';
+const DEFAULT_TEAM = [
+  {name:'Harsh Dhanuka', firstName:'Harsh', role:'Finance Manager', region:'India', initials:'HD'},
+  {name:'Cindy Yang', firstName:'Cindy', role:'VP Finance', region:'US', initials:'CY'},
+  {name:'Ravish', firstName:'Ravish', role:'India Operations', region:'India', initials:'RV'},
+  {name:'SK', firstName:'SK', role:'Data Engineering Lead', region:'India', initials:'SK'},
+  {name:'Karthik', firstName:'Karthik', role:'Sales / AR', region:'India', initials:'KT'},
+  {name:'Pierre', firstName:'Pierre', role:'CEO', region:'US', initials:'PR'},
+  {name:'Tapan', firstName:'Tapan', role:'Engineering', region:'India', initials:'TP'},
 ];
+let TEAM = JSON.parse(localStorage.getItem(TEAM_KEY) || 'null') || DEFAULT_TEAM.map(m => ({...m}));
+
+function saveTeam() {
+  localStorage.setItem(TEAM_KEY, JSON.stringify(TEAM));
+}
+
+function makeInitials(name) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+}
+
+function refreshAssigneeDropdown() {
+  const sel = document.getElementById('f-assignee');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = TEAM.map(m => `<option value="${m.firstName}"${m.firstName===cur?' selected':''}>${m.firstName}</option>`).join('');
+}
 
 // ─────────────────────────────────────────────
 //  VIEW ROUTING
@@ -1118,7 +1183,7 @@ function renderList() {
   });
   const tbody = document.getElementById('listTableBody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="11" class="no-results">No tasks match your filters.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="no-results">No tasks match your filters.</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(t => {
@@ -1130,6 +1195,7 @@ function renderList() {
       <td class="td-project">${t.project || '—'}</td>
       <td>${t.assignee}</td>
       <td>${t.region}</td>
+      <td style="color:var(--gray-500)">${fmtDate(t.startDate)}</td>
       <td${over}>${fmtDate(t.dueDate)}</td>
       <td><span class="status-badge ${statusClass}">${t.status}</span></td>
       <td><span class="badge badge-area">${t.area}</span></td>
@@ -1174,7 +1240,7 @@ function renderSprint() {
       </div>
       <table class="tasks-table" style="font-size:12px">
         <thead><tr>
-          <th>ID</th><th>Task</th><th>Project</th><th>Due Date</th><th>Status</th><th>Priority</th><th>Area</th>
+          <th>ID</th><th>Task</th><th>Project</th><th>Start Date</th><th>Due Date</th><th>Status</th><th>Priority</th><th>Area</th>
         </tr></thead>
         <tbody>${atasks.sort((a,b) => {
           const po = {High:0,Medium:1,Low:2};
@@ -1186,6 +1252,7 @@ function renderSprint() {
             <td style="color:var(--gray-500);font-size:11px">${t.id}</td>
             <td style="font-weight:500;max-width:240px">${t.taskName}</td>
             <td style="color:var(--gray-500);font-style:italic">${t.project || '—'}</td>
+            <td style="color:var(--gray-500)">${fmtDate(t.startDate)}</td>
             <td style="${over?'color:var(--red);font-weight:600':''}">${fmtDate(t.dueDate)}</td>
             <td><span class="status-badge ${sc}">${t.status}</span></td>
             <td><span class="badge badge-priority-${t.priority}">${t.priority}</span></td>
@@ -1203,18 +1270,76 @@ function renderSprint() {
 // ─────────────────────────────────────────────
 function renderTeam() {
   const grid = document.getElementById('teamGrid');
-  grid.innerHTML = TEAM.map(m => {
-    const assignedName = m.name.split(' ')[0];
-    const tc = tasks.filter(t => t.assignee === assignedName).length;
-    const active = tasks.filter(t => t.assignee === assignedName && t.status === 'In Progress').length;
+  grid.innerHTML = TEAM.map((m, idx) => {
+    const fn = m.firstName || m.name.split(' ')[0];
+    const tc = tasks.filter(t => t.assignee === fn).length;
+    const active = tasks.filter(t => t.assignee === fn && t.status === 'In Progress').length;
     return `<div class="team-card">
+      <button class="team-card-delete" onclick="deleteUser(${idx})" title="Remove member">✕</button>
       <div class="team-avatar">${m.initials}</div>
       <div class="team-name">${m.name}</div>
-      <div class="team-role">${m.role}</div>
+      <div class="team-role">${m.role || '—'}</div>
       <div class="team-region">${m.region}</div>
-      <div class="team-task-count">${tc} tasks · ${active} in progress</div>
+      <div class="team-task-count">${tc} task${tc!==1?'s':''} · ${active} in progress</div>
     </div>`;
   }).join('');
+}
+
+// ─────────────────────────────────────────────
+//  USER MANAGEMENT
+// ─────────────────────────────────────────────
+function autoFillFirstName() {
+  const fullName = document.getElementById('u-name').value.trim();
+  const fnEl = document.getElementById('u-firstName');
+  if (fnEl && !fnEl._manualEdit) {
+    fnEl.value = fullName.split(/\s+/)[0] || '';
+  }
+}
+
+function openAddUserModal() {
+  document.getElementById('u-name').value = '';
+  document.getElementById('u-firstName').value = '';
+  document.getElementById('u-role').value = '';
+  document.getElementById('u-region').value = 'India';
+  document.getElementById('userModal').classList.add('open');
+}
+
+function closeUserModal() {
+  document.getElementById('userModal').classList.remove('open');
+}
+
+function saveUser() {
+  const name = document.getElementById('u-name').value.trim();
+  const firstName = document.getElementById('u-firstName').value.trim();
+  if (!name) { showToast('Full name is required', 'error'); return; }
+  if (!firstName) { showToast('First name / assignee label is required', 'error'); return; }
+  const exists = TEAM.some(m => (m.firstName || m.name.split(' ')[0]).toLowerCase() === firstName.toLowerCase());
+  if (exists) { showToast(`"${firstName}" already exists in the team`, 'error'); return; }
+  const member = {
+    name,
+    firstName,
+    role: document.getElementById('u-role').value.trim(),
+    region: document.getElementById('u-region').value,
+    initials: makeInitials(name),
+  };
+  TEAM.push(member);
+  saveTeam();
+  closeUserModal();
+  showToast(`${name} added to team!`, 'success');
+  renderTeam();
+}
+
+function deleteUser(idx) {
+  const m = TEAM[idx];
+  if (!m) return;
+  const fn = m.firstName || m.name.split(' ')[0];
+  const assignedCount = tasks.filter(t => t.assignee === fn).length;
+  const label = assignedCount ? ` (they have ${assignedCount} task${assignedCount!==1?'s':''} assigned)` : '';
+  if (!confirm(`Remove ${m.name} from the team?${label}`)) return;
+  TEAM.splice(idx, 1);
+  saveTeam();
+  showToast(`${m.name} removed from team`, 'success');
+  renderTeam();
 }
 
 // ─────────────────────────────────────────────
@@ -1235,7 +1360,7 @@ function renderSetup() {
       var taskRow = rows.findIndex((r, i) => i > 0 && r[idCol] === data.task.id);
       var rowData = [
         data.task.id, data.task.taskName, data.task.project, data.task.assignee,
-        data.task.region, data.task.dueDate, data.task.status, data.task.area,
+        data.task.region, data.task.startDate || '', data.task.dueDate, data.task.status, data.task.area,
         data.task.vendor, data.task.priority, data.task.notes
       ];
       if (taskRow > 0) {
@@ -1255,10 +1380,10 @@ function renderSetup() {
       if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
       if (data.tasks && data.tasks.length) {
         var bulk = data.tasks.map(t => [
-          t.id, t.taskName, t.project, t.assignee, t.region, t.dueDate,
+          t.id, t.taskName, t.project, t.assignee, t.region, t.startDate || '', t.dueDate,
           t.status, t.area, t.vendor, t.priority, t.notes
         ]);
-        sheet.getRange(2, 1, bulk.length, 11).setValues(bulk);
+        sheet.getRange(2, 1, bulk.length, 12).setValues(bulk);
       }
     }
     return ContentService.createTextOutput(JSON.stringify({success:true}))
@@ -1317,8 +1442,10 @@ function openAddModal() {
   document.getElementById('modalTitle').textContent = 'Add New Task';
   document.getElementById('f-taskName').value = '';
   document.getElementById('f-project').value = '';
-  document.getElementById('f-assignee').value = 'Harsh';
+  refreshAssigneeDropdown();
+  document.getElementById('f-assignee').value = TEAM[0]?.firstName || 'Harsh';
   document.getElementById('f-region').value = 'India';
+  document.getElementById('f-startDate').value = '';
   document.getElementById('f-dueDate').value = '';
   document.getElementById('f-status').value = 'Not Started';
   document.getElementById('f-area').value = 'Reporting';
@@ -1335,8 +1462,10 @@ function openEditModal(id) {
   document.getElementById('modalTitle').textContent = 'Edit Task — ' + id;
   document.getElementById('f-taskName').value = t.taskName;
   document.getElementById('f-project').value = t.project || '';
+  refreshAssigneeDropdown();
   document.getElementById('f-assignee').value = t.assignee;
   document.getElementById('f-region').value = t.region;
+  document.getElementById('f-startDate').value = t.startDate || '';
   document.getElementById('f-dueDate').value = t.dueDate || '';
   document.getElementById('f-status').value = t.status;
   document.getElementById('f-area').value = t.area;
@@ -1359,6 +1488,7 @@ function saveTask() {
     project: document.getElementById('f-project').value.trim(),
     assignee: document.getElementById('f-assignee').value,
     region: document.getElementById('f-region').value,
+    startDate: document.getElementById('f-startDate').value,
     dueDate: document.getElementById('f-dueDate').value,
     status: document.getElementById('f-status').value,
     area: document.getElementById('f-area').value,
@@ -1492,17 +1622,18 @@ async function syncFromSheet() {
     const headers = rows[0].map(h => h.trim());
     const idxOf = (name) => headers.findIndex(h => h.toLowerCase() === name.toLowerCase());
     const loaded = rows.slice(1).filter(r => r[0] && r[0].trim()).map(r => ({
-      id:       r[idxOf('Task ID')]       || '',
-      taskName: r[idxOf('Task Name')]     || '',
-      project:  r[idxOf('Project')]       || '',
-      assignee: r[idxOf('Assignee')]      || '',
-      region:   r[idxOf('Region')]        || '',
-      dueDate:  r[idxOf('Due Date')]      || '',
-      status:   r[idxOf('Status')]        || 'Not Started',
-      area:     r[idxOf('Area')]          || '',
-      vendor:   r[idxOf('Vendor Involved')] || 'N',
-      priority: r[idxOf('Priority')]      || 'Medium',
-      notes:    r[idxOf('Notes')]         || '',
+      id:        r[idxOf('Task ID')]        || '',
+      taskName:  r[idxOf('Task Name')]      || '',
+      project:   r[idxOf('Project')]        || '',
+      assignee:  r[idxOf('Assignee')]       || '',
+      region:    r[idxOf('Region')]         || '',
+      startDate: r[idxOf('Start Date')]     || '',
+      dueDate:   r[idxOf('Due Date')]       || '',
+      status:    r[idxOf('Status')]         || 'Not Started',
+      area:      r[idxOf('Area')]           || '',
+      vendor:    r[idxOf('Vendor Involved')]|| 'N',
+      priority:  r[idxOf('Priority')]       || 'Medium',
+      notes:     r[idxOf('Notes')]          || '',
     }));
     tasks = loaded;
     saveTasks();
