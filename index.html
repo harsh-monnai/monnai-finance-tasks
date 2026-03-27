@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finance Sprint & Task Manager — Monnai</title>
+<style>
+  :root {
+    --navy: #1a2744;
+    --navy-light: #253561;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --teal: #0d9488;
+    --amber: #d97706;
+    --red: #dc2626;
+    --green: #16a34a;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-500: #64748b;
+    --gray-700: #334155;
+    --gray-900: #0f172a;
+    --white: #ffffff;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--navy);
+    color: var(--white);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-md);
+  }
+  header .logo { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; }
+  header .logo span { opacity: 0.6; font-weight: 400; font-size: 13px; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .btn-header { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: background 0.15s; }
+  .btn-header:hover { background: rgba(255,255,255,0.2); }
+  .btn-header.primary { background: var(--blue); border-color: var(--blue); }
+  .btn-header.primary:hover { background: #1d4ed8; }
+  .sync-indicator { font-size: 12px; opacity: 0.7; }
+  .sync-indicator.ok { color: #86efac; }
+  .sync-indicator.err { color: #fca5a5; }
+
+  /* ── Nav Tabs ── */
+  .nav-bar {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .nav-tab {
+    padding: 14px 18px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-500);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .nav-tab:hover { color: var(--gray-700); }
+  .nav-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+  /* ── Main Layout ── */
+  main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+  /* ── Dashboard Stats ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+  }
+  .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-500); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--gray-900); }
+  .stat-sub { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+  .stat-card.overdue .stat-value { color: var(--red); }
+  .stat-card.blocked .stat-value { color: var(--amber); }
+  .stat-card.done .stat-value { color: var(--green); }
+
+  /* ── Section heading ── */
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ── Kanban ── */
+  .kanban-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 1100px) { .kanban-board { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .kanban-board { grid-template-columns: 1fr; } }
+  .kanban-col {
+    background: var(--gray-100);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    min-height: 200px;
+  }
+  .kanban-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 4px 2px;
+  }
+  .kanban-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .col-count { background: var(--gray-300); color: var(--gray-700); font-size: 11px; font-weight: 700; border-radius: 10px; padding: 1px 7px; }
+  .col-not-started .kanban-col-title { color: var(--gray-500); }
+  .col-in-progress .kanban-col-title { color: var(--blue); }
+  .col-in-progress .col-count { background: var(--blue-light); color: var(--blue); }
+  .col-done .kanban-col-title { color: var(--green); }
+  .col-done .col-count { background: #dcfce7; color: var(--green); }
+  .col-blocked .kanban-col-title { color: var(--amber); }
+  .col-blocked .col-count { background: #fef3c7; color: var(--amber); }
+
+  .task-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.1s;
+    border-left: 3px solid transparent;
+  }
+  .task-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .task-card.priority-High { border-left-color: var(--red); }
+  .task-card.priority-Medium { border-left-color: var(--amber); }
+  .task-card.priority-Low { border-left-color: var(--gray-300); }
+  .task-card-title { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-bottom: 6px; line-height: 1.4; }
+  .task-card-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; }
+  .badge-area { background: #ede9fe; color: #7c3aed; }
+  .badge-region { background: #e0f2fe; color: #0369a1; }
+  .badge-priority-High { background: #fee2e2; color: var(--red); }
+  .badge-priority-Medium { background: #fef3c7; color: var(--amber); }
+  .badge-priority-Low { background: var(--gray-100); color: var(--gray-500); }
+  .badge-vendor { background: #f0fdf4; color: var(--green); }
+  .task-due { font-size: 10px; color: var(--gray-500); margin-top: 6px; }
+  .task-due.overdue { color: var(--red); font-weight: 600; }
+  .task-assignee { font-size: 10px; color: var(--gray-500); }
+
+  /* ── List View ── */
+  .filters-bar {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+  .filter-group { display: flex; align-items: center; gap: 6px; }
+  .filter-label { font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.3px; }
+  .filter-select {
+    font-size: 12px;
+    padding: 5px 10px;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    background: var(--white);
+    color: var(--gray-700);
+    cursor: pointer;
+    outline: none;
+  }
+  .filter-select:focus { border-color: var(--blue); }
+  .filter-search {
+    flex: 1;
+    min-width: 180px;
+    font-size: 12px;
+    padding: 5px 10px;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    outline: none;
+  }
+  .filter-search:focus { border-color: var(--blue); }
+  .btn-clear-filters { font-size: 11px; color: var(--gray-500); background: none; border: none; cursor: pointer; text-decoration: underline; }
+
+  .tasks-table-wrapper { background: var(--white); border-radius: var(--radius-lg); border: 1px solid var(--gray-200); overflow: hidden; box-shadow: var(--shadow); }
+  .tasks-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .tasks-table th { background: var(--gray-50); padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid var(--gray-200); cursor: pointer; user-select: none; white-space: nowrap; }
+  .tasks-table th:hover { color: var(--gray-700); }
+  .tasks-table th .sort-icon { font-size: 10px; margin-left: 3px; opacity: 0.5; }
+  .tasks-table td { padding: 10px 14px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+  .tasks-table tr:last-child td { border-bottom: none; }
+  .tasks-table tr:hover td { background: var(--gray-50); }
+  .td-title { font-weight: 500; color: var(--gray-900); max-width: 260px; }
+  .td-project { color: var(--gray-500); font-style: italic; }
+  .td-actions { display: flex; gap: 6px; }
+  .btn-sm { font-size: 11px; padding: 4px 10px; border-radius: 5px; cursor: pointer; border: 1px solid var(--gray-300); background: var(--white); color: var(--gray-700); transition: all 0.12s; }
+  .btn-sm:hover { background: var(--gray-100); }
+  .btn-sm.edit { color: var(--blue); border-color: #bfdbfe; background: var(--blue-light); }
+  .btn-sm.delete { color: var(--red); border-color: #fecaca; background: #fff5f5; }
+  .no-results { text-align: center; padding: 48px; color: var(--gray-500); font-size: 13px; }
+
+  /* Status badges in table */
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 10px; }
+  .status-Not.Started, .status-Not-Started { background: var(--gray-100); color: var(--gray-500); }
+  .status-In.Progress, .status-In-Progress { background: var(--blue-light); color: var(--blue); }
+  .status-Done { background: #dcfce7; color: var(--green); }
+  .status-Blocked { background: #fef3c7; color: var(--amber); }
+
+  /* ── Dashboard Charts ── */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 860px) { .dashboard-grid { grid-template-columns: 1fr; } }
+  .chart-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .chart-title { font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 16px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; }
+  .bar-label { width: 110px; color: var(--gray-700); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 14px; background: var(--gray-100); border-radius: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 7px; transition: width 0.5s ease; }
+  .bar-count { width: 24px; text-align: right; color: var(--gray-500); font-size: 11px; font-weight: 600; }
+
+  /* ── Sprint View ── */
+  .sprint-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    margin-bottom: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .sprint-assignee-header {
+    background: var(--navy);
+    color: white;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .sprint-progress { font-size: 11px; opacity: 0.8; }
+  .sprint-progress-bar { height: 3px; background: rgba(255,255,255,0.2); margin-top: 4px; border-radius: 2px; overflow: hidden; }
+  .sprint-progress-fill { height: 100%; background: #86efac; border-radius: 2px; }
+
+  /* ── Setup Guide ── */
+  .setup-guide {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow);
+    max-width: 860px;
+  }
+  .setup-guide h2 { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .setup-guide .subtitle { color: var(--gray-500); font-size: 13px; margin-bottom: 24px; }
+  .setup-step { display: flex; gap: 16px; margin-bottom: 24px; }
+  .step-num { width: 28px; height: 28px; min-width: 28px; background: var(--blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .step-content h3 { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 6px; }
+  .step-content p, .step-content li { font-size: 13px; color: var(--gray-700); line-height: 1.6; }
+  .step-content ul { padding-left: 18px; margin-top: 4px; }
+  .code-block { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 6px; padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 11px; color: var(--gray-700); margin-top: 8px; white-space: pre-wrap; word-break: break-all; }
+  .url-input-row { display: flex; gap: 8px; margin-top: 10px; }
+  .url-input { flex: 1; font-size: 12px; padding: 7px 10px; border: 1px solid var(--gray-300); border-radius: 6px; outline: none; color: var(--gray-700); }
+  .url-input:focus { border-color: var(--blue); }
+  .btn-save-url { padding: 7px 16px; background: var(--blue); color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .btn-save-url:hover { background: #1d4ed8; }
+  .config-status { font-size: 11px; margin-top: 6px; padding: 4px 0; }
+  .config-status.ok { color: var(--green); }
+  .config-status.missing { color: var(--gray-500); font-style: italic; }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 640px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+  }
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; color: var(--gray-900); }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--gray-500); line-height: 1; padding: 2px; }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer { padding: 14px 24px; border-top: 1px solid var(--gray-200); display: flex; justify-content: flex-end; gap: 10px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 540px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.3px; }
+  .form-input, .form-select, .form-textarea {
+    padding: 8px 10px;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--gray-900);
+    outline: none;
+    background: var(--white);
+    transition: border-color 0.15s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  .form-textarea { resize: vertical; min-height: 70px; }
+  .btn-primary { padding: 9px 20px; background: var(--blue); color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-secondary { padding: 9px 20px; background: var(--white); color: var(--gray-700); border: 1px solid var(--gray-300); border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .btn-secondary:hover { background: var(--gray-50); }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--gray-900);
+    color: white;
+    padding: 12px 18px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    z-index: 300;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.25s ease;
+    pointer-events: none;
+    max-width: 320px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error { border-left: 3px solid var(--red); }
+
+  /* ── Tabs hidden ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── Gantt ── */
+  .gantt-container { overflow-x: auto; }
+  .gantt-table { min-width: 700px; width: 100%; border-collapse: collapse; font-size: 11px; }
+  .gantt-table th { background: var(--gray-50); padding: 6px 10px; border: 1px solid var(--gray-200); font-weight: 600; color: var(--gray-500); text-align: center; font-size: 10px; }
+  .gantt-table td { padding: 6px 10px; border: 1px solid var(--gray-100); }
+  .gantt-bar { height: 16px; border-radius: 4px; display: inline-block; }
+
+  /* ── Team Registry ── */
+  .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .team-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+  .team-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--navy); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+  .team-name { font-size: 13px; font-weight: 600; color: var(--gray-900); }
+  .team-role { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+  .team-region { font-size: 10px; color: var(--blue); margin-top: 4px; font-weight: 600; }
+  .team-task-count { font-size: 11px; color: var(--gray-500); margin-top: 6px; }
+
+  .empty-col { text-align: center; padding: 24px 10px; color: var(--gray-300); font-size: 11px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    📊 Finance Task Manager <span>— Monnai</span>
+  </div>
+  <div class="header-actions">
+    <span class="sync-indicator" id="syncStatus"></span>
+    <button class="btn-header" onclick="showView('setup')">⚙ Setup</button>
+    <button class="btn-header" onclick="syncFromSheet()">↓ Load Sheet</button>
+    <button class="btn-header primary" onclick="openAddModal()">+ Add Task</button>
+  </div>
+</header>
+
+<nav class="nav-bar">
+  <div class="nav-tab active" onclick="showView('dashboard')">Dashboard</div>
+  <div class="nav-tab" onclick="showView('kanban')">Kanban Board</div>
+  <div class="nav-tab" onclick="showView('list')">List View</div>
+  <div class="nav-tab" onclick="showView('sprint')">Sprint View</div>
+  <div class="nav-tab" onclick="showView('team')">Team</div>
+  <div class="nav-tab" onclick="showView('setup')">⚙ Setup</div>
+</nav>
+
+<main>
+
+  <!-- ── DASHBOARD ── -->
+  <div id="view-dashboard" class="view active">
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="dashboard-grid">
+      <div class="chart-card">
+        <div class="chart-title">Tasks by Status</div>
+        <div id="chartStatus"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Tasks by Area</div>
+        <div id="chartArea"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Tasks by Team Member</div>
+        <div id="chartAssignee"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Tasks by Region</div>
+        <div id="chartRegion"></div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-bottom:16px;">
+      <div class="chart-title">Priority Breakdown</div>
+      <div id="chartPriority"></div>
+    </div>
+  </div>
+
+  <!-- ── KANBAN ── -->
+  <div id="view-kanban" class="view">
+    <div class="kanban-board">
+      <div class="kanban-col col-not-started">
+        <div class="kanban-col-header">
+          <span class="kanban-col-title">Not Started</span>
+          <span class="col-count" id="cnt-Not Started">0</span>
+        </div>
+        <div id="col-Not Started"></div>
+      </div>
+      <div class="kanban-col col-in-progress">
+        <div class="kanban-col-header">
+          <span class="kanban-col-title">In Progress</span>
+          <span class="col-count" id="cnt-In Progress">0</span>
+        </div>
+        <div id="col-In Progress"></div>
+      </div>
+      <div class="kanban-col col-done">
+        <div class="kanban-col-header">
+          <span class="kanban-col-title">Done</span>
+          <span class="col-count" id="cnt-Done">0</span>
+        </div>
+        <div id="col-Done"></div>
+      </div>
+      <div class="kanban-col col-blocked">
+        <div class="kanban-col-header">
+          <span class="kanban-col-title">Blocked</span>
+          <span class="col-count" id="cnt-Blocked">0</span>
+        </div>
+        <div id="col-Blocked"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LIST ── -->
+  <div id="view-list" class="view">
+    <div class="filters-bar">
+      <input type="text" class="filter-search" id="filterSearch" placeholder="🔍  Search tasks..." oninput="renderList()">
+      <div class="filter-group">
+        <span class="filter-label">Status</span>
+        <select class="filter-select" id="filterStatus" onchange="renderList()">
+          <option value="">All</option>
+          <option>Not Started</option>
+          <option>In Progress</option>
+          <option>Done</option>
+          <option>Blocked</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Assignee</span>
+        <select class="filter-select" id="filterAssignee" onchange="renderList()">
+          <option value="">All</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Area</span>
+        <select class="filter-select" id="filterArea" onchange="renderList()">
+          <option value="">All</option>
+          <option>Reporting</option>
+          <option>Tax</option>
+          <option>Legal</option>
+          <option>Admin</option>
+          <option>HR</option>
+          <option>Compliance</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Region</span>
+        <select class="filter-select" id="filterRegion" onchange="renderList()">
+          <option value="">All</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Priority</span>
+        <select class="filter-select" id="filterPriority" onchange="renderList()">
+          <option value="">All</option>
+          <option>High</option>
+          <option>Medium</option>
+          <option>Low</option>
+        </select>
+      </div>
+      <button class="btn-clear-filters" onclick="clearFilters()">Clear filters</button>
+    </div>
+    <div class="tasks-table-wrapper">
+      <table class="tasks-table">
+        <thead>
+          <tr>
+            <th onclick="sortBy('id')" style="width:60px">ID <span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('taskName')">Task Name <span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('project')">Project</th>
+            <th onclick="sortBy('assignee')">Assignee</th>
+            <th onclick="sortBy('region')">Region</th>
+            <th onclick="sortBy('dueDate')">Due Date <span class="sort-icon">↕</span></th>
+            <th onclick="sortBy('status')">Status</th>
+            <th onclick="sortBy('area')">Area</th>
+            <th onclick="sortBy('priority')">Priority</th>
+            <th>Vendor</th>
+            <th style="width:90px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="listTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── SPRINT ── -->
+  <div id="view-sprint" class="view">
+    <div style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between;">
+      <div>
+        <div style="font-size:18px; font-weight:700; color:var(--navy)">Current Sprint</div>
+        <div style="font-size:12px; color:var(--gray-500); margin-top:2px">Apr 1 – Apr 30, 2026 · Showing In Progress + Not Started (High priority)</div>
+      </div>
+    </div>
+    <div id="sprintContainer"></div>
+  </div>
+
+  <!-- ── TEAM ── -->
+  <div id="view-team" class="view">
+    <div style="margin-bottom:16px; font-size:18px; font-weight:700; color:var(--navy)">Team Registry</div>
+    <div class="team-grid" id="teamGrid"></div>
+  </div>
+
+  <!-- ── SETUP ── -->
+  <div id="view-setup" class="view">
+    <div class="setup-guide">
+      <h2>⚙ Setup & Configuration</h2>
+      <p class="subtitle">Follow these steps once to connect this app to your Google Sheet. Takes about 10 minutes.</p>
+
+      <div class="setup-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>Create your Google Sheet</h3>
+          <p>Go to <strong>sheets.google.com</strong> and create a new spreadsheet. Name it <em>"Monnai Finance Tasks"</em>.</p>
+          <p style="margin-top:6px">Create these tabs (click the + at the bottom): <strong>Tasks DB, Dashboard, Sprint View, Team Registry</strong></p>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>Set up the Tasks DB tab headers</h3>
+          <p>In the <strong>Tasks DB</strong> tab, paste these headers in Row 1 (A1 through K1):</p>
+          <div class="code-block">Task ID	Task Name	Project	Assignee	Region	Due Date	Status	Area	Vendor Involved	Priority	Notes</div>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>Add the Apps Script to enable writing</h3>
+          <p>In your Google Sheet, click <strong>Extensions → Apps Script</strong>. Delete any existing code and paste all of the following, then click <strong>Save (💾)</strong>:</p>
+          <div class="code-block" id="appsScriptCode"></div>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3>Deploy the Apps Script as a Web App</h3>
+          <ul>
+            <li>Click <strong>Deploy → New deployment</strong></li>
+            <li>Set type to <strong>Web app</strong></li>
+            <li>Execute as: <strong>Me</strong></li>
+            <li>Who has access: <strong>Anyone</strong> (or "Anyone with Google account" if preferred)</li>
+            <li>Click <strong>Deploy</strong>, authorize when prompted</li>
+            <li>Copy the <strong>Web App URL</strong> (looks like: https://script.google.com/macros/s/ABC.../exec)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h3>Share your sheet so this app can read it</h3>
+          <ul>
+            <li>In the Google Sheet, click the <strong>Share</strong> button (top right)</li>
+            <li>Under "General access", change it to <strong>"Anyone with the link"</strong> and set permission to <strong>Viewer</strong></li>
+            <li>Click <strong>Copy link</strong> — this is the URL you'll paste in Step 6 below</li>
+          </ul>
+          <p style="margin-top:8px; font-size:12px; color:var(--gray-500)">The URL looks like: <em>https://docs.google.com/spreadsheets/d/1aBcD.../edit?usp=sharing</em> — just paste the whole thing, the app will extract what it needs.</p>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">6</div>
+        <div class="step-content">
+          <h3>Connect this app to your Sheet</h3>
+          <p style="margin-bottom:8px"><strong>Apps Script Web App URL</strong> (for adding/editing tasks):</p>
+          <div class="url-input-row">
+            <input class="url-input" id="inputScriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
+            <button class="btn-save-url" onclick="saveScriptUrl()">Save</button>
+          </div>
+          <div class="config-status" id="statusScriptUrl"></div>
+          <p style="margin-top:14px; margin-bottom:8px"><strong>Google Sheet URL</strong> (paste the sharing link from Step 5):</p>
+          <div class="url-input-row">
+            <input class="url-input" id="inputCsvUrl" placeholder="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit?usp=sharing">
+            <button class="btn-save-url" onclick="saveCsvUrl()">Save</button>
+          </div>
+          <div class="config-status" id="statusCsvUrl"></div>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">7</div>
+        <div class="step-content">
+          <h3>Export your current tasks to Google Sheets</h3>
+          <p>Once both URLs are saved, click the button below to push all current tasks into your Google Sheet:</p>
+          <button class="btn-primary" style="margin-top:10px" onclick="exportAllToSheet()">⬆ Push All Tasks to Google Sheet</button>
+          <div id="exportStatus" style="font-size:12px; margin-top:8px; color:var(--gray-500)"></div>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">8</div>
+        <div class="step-content">
+          <h3>Dashboard formulas for your Google Sheet</h3>
+          <p>Copy these formulas into the <strong>Dashboard</strong> tab of your Google Sheet:</p>
+          <div class="code-block">-- Cell B2: Total Tasks
+=COUNTA('Tasks DB'!A2:A)
+
+-- Cell B3: Not Started
+=COUNTIF('Tasks DB'!G2:G,"Not Started")
+
+-- Cell B4: In Progress
+=COUNTIF('Tasks DB'!G2:G,"In Progress")
+
+-- Cell B5: Done
+=COUNTIF('Tasks DB'!G2:G,"Done")
+
+-- Cell B6: Blocked
+=COUNTIF('Tasks DB'!G2:G,"Blocked")
+
+-- Cell B7: Overdue (past due date, not Done)
+=COUNTIFS('Tasks DB'!F2:F,"<"&TODAY(),'Tasks DB'!G2:G,"<>Done",'Tasks DB'!F2:F,"<>")
+
+-- Cell B8: High Priority
+=COUNTIF('Tasks DB'!J2:J,"High")
+
+-- Tasks by Assignee (put in D2, drag down for each person)
+=COUNTIF('Tasks DB'!D2:D, C2)
+
+-- Tasks by Area (put in G2, drag down)
+=COUNTIF('Tasks DB'!H2:H, F2)
+
+-- Tasks by Region (put in J2, drag down)
+=COUNTIF('Tasks DB'!E2:E, I2)
+
+-- Sprint View tab: Current sprint tasks (not Done, High or Medium priority)
+=FILTER('Tasks DB'!A2:K, ('Tasks DB'!G2:G<>"Done")*('Tasks DB'!J2:J<>"Low"))</div>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">9</div>
+        <div class="step-content">
+          <h3>Host this HTML file (free, no coding)</h3>
+          <p><strong>Option A — Simplest:</strong> Just open this file in Chrome. It works fully offline. Share the file with Cindy via Google Drive or email.</p>
+          <p style="margin-top:8px"><strong>Option B — GitHub Pages (free, always accessible online):</strong></p>
+          <ul>
+            <li>Go to github.com → Create free account → New repository (name: <em>finance-tasks</em>, set to Public)</li>
+            <li>Click "Add file → Upload files" → drag this HTML file in</li>
+            <li>Go to repository Settings → Pages → Source: main branch → Save</li>
+            <li>Your app will be live at: <em>https://yourusername.github.io/finance-tasks/finance-task-manager.html</em></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ── Add/Edit Modal ── -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Add New Task</span>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Task Name *</label>
+          <input class="form-input" id="f-taskName" placeholder="e.g. Implement close calendar">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Project / Initiative</label>
+          <input class="form-input" id="f-project" placeholder="e.g. Month-End Close">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assignee</label>
+          <select class="form-select" id="f-assignee">
+            <option>Harsh</option>
+            <option>Cindy</option>
+            <option>Ravish</option>
+            <option>SK</option>
+            <option>Karthik</option>
+            <option>Pierre</option>
+            <option>Tapan</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Region</label>
+          <select class="form-select" id="f-region">
+            <option>Global</option>
+            <option>India</option>
+            <option>Singapore</option>
+            <option>Indonesia</option>
+            <option>US</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Due Date</label>
+          <input class="form-input" type="date" id="f-dueDate">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="f-status">
+            <option>Not Started</option>
+            <option>In Progress</option>
+            <option>Done</option>
+            <option>Blocked</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Area</label>
+          <select class="form-select" id="f-area">
+            <option>Reporting</option>
+            <option>Tax</option>
+            <option>Legal</option>
+            <option>Admin</option>
+            <option>HR</option>
+            <option>Compliance</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="form-select" id="f-priority">
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Vendor Involved</label>
+          <select class="form-select" id="f-vendor">
+            <option value="N">No</option>
+            <option value="Y">Yes</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Notes</label>
+          <textarea class="form-textarea" id="f-notes" placeholder="Any additional context, blockers, or links..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Status Change Modal ── -->
+<div class="modal-overlay" id="statusModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">Move Task</span>
+      <button class="modal-close" onclick="document.getElementById('statusModal').classList.remove('open')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px; color:var(--gray-700); margin-bottom:14px" id="statusModalTaskName"></p>
+      <div class="form-group">
+        <label class="form-label">Change Status to:</label>
+        <select class="form-select" id="statusModalSelect">
+          <option>Not Started</option>
+          <option>In Progress</option>
+          <option>Done</option>
+          <option>Blocked</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('statusModal').classList.remove('open')">Cancel</button>
+      <button class="btn-primary" onclick="confirmStatusChange()">Update Status</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+//  CONFIG
+// ─────────────────────────────────────────────
+const CONFIG_KEY = 'monnaiFinanceConfig';
+let config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{"scriptUrl":"","csvUrl":""}');
+
+// ─────────────────────────────────────────────
+//  SEED DATA — drawn from FY2025-26 review docs
+// ─────────────────────────────────────────────
+const SEED_TASKS = [
+  // ── In Progress ──
+  {id:'T-001', taskName:'Implement close calendar (preparer + reviewer timeline)', project:'Month-End Close', assignee:'Harsh', region:'Global', dueDate:'2026-04-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Goal from Cindy review: reduce close to T+10 by Aug 2026. Preparer = Harsh, Reviewer = Cindy.'},
+  {id:'T-002', taskName:'Reduce month-end close to T+10 (all final reporting to leadership)', project:'Month-End Close', assignee:'Harsh', region:'Global', dueDate:'2026-07-31', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Currently at T+15 due to G&J delays. Target T+7 by Jul 2026.'},
+  {id:'T-003', taskName:'Build AI-assisted billing automation (1.5 days → <0.5 day)', project:'Billing Automation', assignee:'Harsh', region:'Global', dueDate:'2026-09-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Goal: reduce billing cycle time. Work with Ravish and Engineering.'},
+  {id:'T-004', taskName:'Set up Ramp for invoice approvals (business owners → Finance → payment)', project:'Ramp Setup', assignee:'Harsh', region:'US', dueDate:'2026-04-30', status:'In Progress', area:'Admin', vendor:'Y', priority:'High', notes:'Cindy goal. Replace current manual invoice approval flow.'},
+  {id:'T-005', taskName:'Lead FY2025-26 India Statutory Audit (close by May 31, 2026)', project:'India Statutory Audit', assignee:'Harsh', region:'India', dueDate:'2026-05-31', status:'In Progress', area:'Tax', vendor:'Y', priority:'High', notes:'Primary contact: Aditi Shanbhag & team. No material findings target. Prior year closed in May 2025 (50 days).'},
+  {id:'T-006', taskName:'Improve Guru & Jana timeliness — set MIS delivery SLAs', project:'G&J Management', assignee:'Harsh', region:'India', dueDate:'2026-04-30', status:'In Progress', area:'Reporting', vendor:'Y', priority:'Medium', notes:'Fee revision due April 2026. Negotiate better resource. Set data delivery cut-offs.'},
+  {id:'T-007', taskName:'Continue data cost and customer margins project (top 16 customers)', project:'Customer Margins', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Work with SK (Tapan on Endpoint reports). Product and customer-level margins.'},
+  {id:'T-008', taskName:'Gain full understanding of consolidated financial models & FP&A', project:'FP&A Upskilling', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'In Progress', area:'Reporting', vendor:'N', priority:'Medium', notes:'Goal: independently manage, update and enhance FP&A models by June 2026.'},
+  {id:'T-009', taskName:'T+7 month-end close for all entities by July 2026', project:'Month-End Close', assignee:'Harsh', region:'Global', dueDate:'2026-07-31', status:'In Progress', area:'Reporting', vendor:'N', priority:'High', notes:'Team Goal 1. Pre-close checklists with G&J, Vistra, InCorp.'},
+  {id:'T-010', taskName:'ACRA Singapore FY2025 filing', project:'Singapore Compliance', assignee:'Harsh', region:'Singapore', dueDate:'2026-08-31', status:'In Progress', area:'Compliance', vendor:'Y', priority:'High', notes:'Working with Vistra. Unaudited FS filing required.'},
+  {id:'T-011', taskName:'US 1099s and Corporate Tax Returns FY2025', project:'US Compliance', assignee:'Harsh', region:'US', dueDate:'2026-04-15', status:'In Progress', area:'Tax', vendor:'Y', priority:'High', notes:'Baker Tilly. FBAR already done. 1099s + State & Federal returns.'},
+  {id:'T-012', taskName:'India New Labour Code compliance gap closure', project:'Labour Code Compliance', assignee:'Harsh', region:'India', dueDate:'2026-03-31', status:'In Progress', area:'Compliance', vendor:'Y', priority:'High', notes:'Finalize gap analysis with G&J, redline policy changes, implement before FY year-end.'},
+
+  // ── Not Started ──
+  {id:'T-013', taskName:'Prepare consolidated reconciliation file with folder structure', project:'Accounting Processes', assignee:'Harsh', region:'Global', dueDate:'2026-05-31', status:'Not Started', area:'Reporting', vendor:'N', priority:'High', notes:'Cindy goal: all accounting reconciliations linked with folder structure for review.'},
+  {id:'T-014', taskName:'Create preliminary close review process with variance analysis', project:'Accounting Processes', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'High', notes:'MoM variance walkthrough before sharing numbers with Pierre and Board.'},
+  {id:'T-015', taskName:'Build global compliance tracker (all regulatory deadlines across 4 countries)', project:'Compliance Tracker', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'Not Started', area:'Compliance', vendor:'N', priority:'High', notes:'Team Goal 3. Cover India (MCA, GST, TDS, FEMA, Labour), Singapore (ACRA, CPF, SDL), Indonesia (LKPM, BKPM), US (FBAR, 1099s, State VAT, Corp Tax).'},
+  {id:'T-016', taskName:'Organize all contracts (customers, data partners, vendors)', project:'Contract Management', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'Not Started', area:'Admin', vendor:'N', priority:'High', notes:'Cindy team goal. Centralized contract repository.'},
+  {id:'T-017', taskName:'Create and improve financial reporting for Management and Board', project:'Management Reporting', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'High', notes:'Includes consolidated FS, board deck numbers. Monthly entity-level review with Cindy.'},
+  {id:'T-018', taskName:'Build AI Agents for invoicing, cost accruals, margin calculations', project:'AI Finance Agents', assignee:'Harsh', region:'Global', dueDate:'2026-09-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Team Goal 2. Work with Ravish and Engineering. Track progress with Gantt Chart.'},
+  {id:'T-019', taskName:'Build interactive KPI dashboards (Revenue, Costs, Margins, Investor)', project:'KPI Dashboards', assignee:'Harsh', region:'Global', dueDate:'2026-09-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Team Goal 4. Q3 2026. Includes investor reporting dashboard.'},
+  {id:'T-020', taskName:'Improve pricing methodology factoring in Data + Server costs', project:'Pricing Methodology', assignee:'Harsh', region:'Global', dueDate:'2026-09-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Cindy team goal. Factor in all cost components for accurate margin.'},
+  {id:'T-021', taskName:'Monitor AWS costs and evaluate cost-saving initiatives', project:'AWS Cost Optimization', assignee:'Harsh', region:'US', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'Y', priority:'Medium', notes:'Cindy team goal. Ongoing monitoring.'},
+  {id:'T-022', taskName:'Data partners: notify teams of unspent minimum commitments', project:'Data Partner Management', assignee:'Harsh', region:'Global', dueDate:'2026-06-30', status:'Not Started', area:'Reporting', vendor:'Y', priority:'Medium', notes:'Proactive notifications to teams for unused minimums.'},
+  {id:'T-023', taskName:'Indonesia LKPM Q2 2026 quarterly reporting (InCorp)', project:'Indonesia Compliance', assignee:'Harsh', region:'Indonesia', dueDate:'2026-07-31', status:'Not Started', area:'Compliance', vendor:'Y', priority:'Medium', notes:'Via InCorp. Also coordinate monthly VAT returns.'},
+  {id:'T-024', taskName:'G&J fee revision negotiation (April 2026)', project:'G&J Management', assignee:'Harsh', region:'India', dueDate:'2026-04-30', status:'Not Started', area:'Admin', vendor:'Y', priority:'Medium', notes:'Negotiate better resource allocation and revised SLAs at annual fee renewal.'},
+  {id:'T-025', taskName:'Monthly entity-level financial review meeting with Cindy', project:'Month-End Close', assignee:'Cindy', region:'Global', dueDate:'2026-04-30', status:'Not Started', area:'Reporting', vendor:'N', priority:'Medium', notes:'Harsh requested: 30-min monthly session to review standalone entity financials before consolidation upload.'},
+
+  // ── Done ──
+  {id:'T-026', taskName:'RBI FEMA Compounding Application — closed', project:'FEMA Compounding', assignee:'Harsh', region:'India', dueDate:'2026-03-31', status:'Done', area:'Compliance', vendor:'Y', priority:'High', notes:'FC-GPR compounding under FEMA 1999. Coordinated with G&J and RBI. Fee payment completed March 2026. First-of-its-kind for Monnai.'},
+  {id:'T-027', taskName:'Funding Due Diligence — Motiv Partners (Oct–Dec 2025)', project:'Funding DD', assignee:'Harsh', region:'Global', dueDate:'2025-12-31', status:'Done', area:'Admin', vendor:'Y', priority:'High', notes:'Coordinated Baker Tilly (US), Chandihok & KPMG (India). Responded to most queries within 24 hours. Positive feedback from Pierre.'},
+  {id:'T-028', taskName:'India Statutory Audit FY2024 (closed May 2025)', project:'India Statutory Audit', assignee:'Harsh', region:'India', dueDate:'2025-05-31', status:'Done', area:'Tax', vendor:'Y', priority:'High', notes:'Closed within 50 days of FY end. Prior year had taken until September. Tax refund of INR 32 Lakhs received.'},
+  {id:'T-029', taskName:'India Health Insurance migration to Private TPA', project:'HR Operations', assignee:'Harsh', region:'India', dueDate:'2026-03-31', status:'Done', area:'HR', vendor:'Y', priority:'Medium', notes:'Moved from Government insurer to Private TPA with portal access, self-serve, wider hospital network, annual health checkups.'},
+  {id:'T-030', taskName:'ROC Registered Office shifting (Surat to Bangalore)', project:'MCA Compliance', assignee:'Harsh', region:'India', dueDate:'2026-03-31', status:'Done', area:'Legal', vendor:'N', priority:'Medium', notes:'GSC-based GNL-1 filings with ROC. Also managed layoffs, vacating physical office, selling assets, acquiring virtual office.'},
+  {id:'T-031', taskName:'GSTR-9/9C annual GST returns FY2024-25', project:'India Tax Compliance', assignee:'Harsh', region:'India', dueDate:'2025-12-31', status:'Done', area:'Tax', vendor:'Y', priority:'High', notes:'Actuarial valuations for Gratuity and Leave Encashment also completed.'},
+  {id:'T-032', taskName:'Indonesia monthly VAT returns and LKPM Q3/Q4 2025', project:'Indonesia Compliance', assignee:'Harsh', region:'Indonesia', dueDate:'2025-12-31', status:'Done', area:'Compliance', vendor:'Y', priority:'Medium', notes:'Via InCorp. All quarterly LKPM filings and monthly VAT payments current.'},
+];
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+const STORAGE_KEY = 'monnaiFinanceTasks';
+let tasks = [];
+let editingId = null;
+let statusChangeId = null;
+let sortField = 'id';
+let sortAsc = true;
+
+function loadTasks() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    tasks = JSON.parse(stored);
+  } else {
+    tasks = JSON.parse(JSON.stringify(SEED_TASKS));
+    saveTasks();
+  }
+}
+
+function saveTasks() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function nextId() {
+  const nums = tasks.map(t => parseInt(t.id.replace('T-',''))).filter(n => !isNaN(n));
+  const max = nums.length ? Math.max(...nums) : 0;
+  return 'T-' + String(max + 1).padStart(3, '0');
+}
+
+// ─────────────────────────────────────────────
+//  TEAM DATA
+// ─────────────────────────────────────────────
+const TEAM = [
+  {name:'Harsh Dhanuka', role:'Finance Manager', region:'India', initials:'HD'},
+  {name:'Cindy Yang', role:'VP Finance', region:'US', initials:'CY'},
+  {name:'Ravish', role:'India Operations', region:'India', initials:'RV'},
+  {name:'SK', role:'Data Engineering Lead', region:'India', initials:'SK'},
+  {name:'Karthik', role:'Sales / AR', region:'India', initials:'KT'},
+  {name:'Pierre', role:'CEO', region:'US', initials:'PR'},
+  {name:'Tapan', role:'Engineering', region:'India', initials:'TP'},
+];
+
+// ─────────────────────────────────────────────
+//  VIEW ROUTING
+// ─────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  const tabs = document.querySelectorAll('.nav-tab');
+  const names = ['dashboard','kanban','list','sprint','team','setup'];
+  const idx = names.indexOf(name);
+  if (idx >= 0) tabs[idx].classList.add('active');
+  renderView(name);
+}
+
+function renderView(name) {
+  if (name === 'dashboard') renderDashboard();
+  else if (name === 'kanban') renderKanban();
+  else if (name === 'list') { populateFilterDropdowns(); renderList(); }
+  else if (name === 'sprint') renderSprint();
+  else if (name === 'team') renderTeam();
+  else if (name === 'setup') renderSetup();
+}
+
+// ─────────────────────────────────────────────
+//  UTILITIES
+// ─────────────────────────────────────────────
+function isOverdue(t) {
+  if (!t.dueDate || t.status === 'Done') return false;
+  return new Date(t.dueDate) < new Date(new Date().toDateString());
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+}
+
+function makeBarChart(container, data, total, colorFn) {
+  container.innerHTML = '';
+  data.forEach(([label, count]) => {
+    const pct = total ? Math.round(count / total * 100) : 0;
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML = `
+      <div class="bar-label" title="${label}">${label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${colorFn(label)}"></div></div>
+      <div class="bar-count">${count}</div>`;
+    container.appendChild(row);
+  });
+  if (!data.length) container.innerHTML = '<div style="color:var(--gray-300);font-size:12px;padding:8px 0">No data</div>';
+}
+
+function countBy(field) {
+  const map = {};
+  tasks.forEach(t => { map[t[field]] = (map[t[field]] || 0) + 1; });
+  return Object.entries(map).sort((a,b) => b[1] - a[1]);
+}
+
+// ─────────────────────────────────────────────
+//  DASHBOARD
+// ─────────────────────────────────────────────
+function renderDashboard() {
+  const total = tasks.length;
+  const inprog = tasks.filter(t => t.status === 'In Progress').length;
+  const done = tasks.filter(t => t.status === 'Done').length;
+  const blocked = tasks.filter(t => t.status === 'Blocked').length;
+  const overdue = tasks.filter(t => isOverdue(t)).length;
+  const high = tasks.filter(t => t.priority === 'High').length;
+
+  const sg = document.getElementById('statsGrid');
+  sg.innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Tasks</div><div class="stat-value">${total}</div><div class="stat-sub">all statuses</div></div>
+    <div class="stat-card"><div class="stat-label">In Progress</div><div class="stat-value" style="color:var(--blue)">${inprog}</div><div class="stat-sub">${Math.round(inprog/total*100)||0}% of total</div></div>
+    <div class="stat-card done"><div class="stat-label">Completed</div><div class="stat-value">${done}</div><div class="stat-sub">${Math.round(done/total*100)||0}% complete</div></div>
+    <div class="stat-card overdue"><div class="stat-label">Overdue</div><div class="stat-value">${overdue}</div><div class="stat-sub">past due date</div></div>
+    <div class="stat-card blocked"><div class="stat-label">Blocked</div><div class="stat-value">${blocked}</div><div class="stat-sub">need attention</div></div>
+    <div class="stat-card"><div class="stat-label">High Priority</div><div class="stat-value" style="color:var(--red)">${high}</div><div class="stat-sub">of ${total} tasks</div></div>`;
+
+  const statusColors = {'Not Started':'#94a3b8','In Progress':'#2563eb','Done':'#16a34a','Blocked':'#d97706'};
+  const areaColors = (a) => ({'Reporting':'#6366f1','Tax':'#0d9488','Legal':'#8b5cf6','Admin':'#64748b','HR':'#ec4899','Compliance':'#f59e0b'}[a] || '#94a3b8');
+  const assigneeColor = () => '#2563eb';
+  const regionColors = (r) => ({'India':'#f97316','US':'#3b82f6','Singapore':'#8b5cf6','Indonesia':'#10b981','Global':'#64748b'}[r] || '#94a3b8');
+  const priorityColors = (p) => ({'High':'#dc2626','Medium':'#d97706','Low':'#94a3b8'}[p] || '#94a3b8');
+
+  makeBarChart(document.getElementById('chartStatus'), countBy('status'), total, l => statusColors[l] || '#94a3b8');
+  makeBarChart(document.getElementById('chartArea'), countBy('area'), total, areaColors);
+  makeBarChart(document.getElementById('chartAssignee'), countBy('assignee'), total, assigneeColor);
+  makeBarChart(document.getElementById('chartRegion'), countBy('region'), total, regionColors);
+  makeBarChart(document.getElementById('chartPriority'), countBy('priority'), total, priorityColors);
+}
+
+// ─────────────────────────────────────────────
+//  KANBAN
+// ─────────────────────────────────────────────
+function renderKanban() {
+  const statuses = ['Not Started', 'In Progress', 'Done', 'Blocked'];
+  statuses.forEach(s => {
+    const col = document.getElementById('col-' + s);
+    const cnt = document.getElementById('cnt-' + s);
+    const filtered = tasks.filter(t => t.status === s);
+    cnt.textContent = filtered.length;
+    col.innerHTML = '';
+    if (!filtered.length) {
+      col.innerHTML = '<div class="empty-col">No tasks</div>';
+      return;
+    }
+    filtered.forEach(t => {
+      const card = document.createElement('div');
+      card.className = `task-card priority-${t.priority}`;
+      const overdue = isOverdue(t) ? ' overdue' : '';
+      card.innerHTML = `
+        <div class="task-card-title">${t.taskName}</div>
+        <div class="task-assignee">${t.assignee} · ${t.id}</div>
+        ${t.dueDate ? `<div class="task-due${overdue}">${overdue ? '⚠ ' : ''}Due ${fmtDate(t.dueDate)}</div>` : ''}
+        <div class="task-card-meta">
+          <span class="badge badge-area">${t.area}</span>
+          <span class="badge badge-region">${t.region}</span>
+          <span class="badge badge-priority-${t.priority}">${t.priority}</span>
+          ${t.vendor === 'Y' ? '<span class="badge badge-vendor">Vendor</span>' : ''}
+        </div>`;
+      card.onclick = () => openStatusModal(t.id);
+      col.appendChild(card);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────
+//  LIST VIEW
+// ─────────────────────────────────────────────
+function populateFilterDropdowns() {
+  const assignees = [...new Set(tasks.map(t => t.assignee))].sort();
+  const regions = [...new Set(tasks.map(t => t.region))].sort();
+  const sel = (id, vals) => {
+    const el = document.getElementById(id);
+    const cur = el.value;
+    el.innerHTML = '<option value="">All</option>' + vals.map(v => `<option${v===cur?' selected':''}>${v}</option>`).join('');
+  };
+  sel('filterAssignee', assignees);
+  sel('filterRegion', regions);
+}
+
+function getFiltered() {
+  const q = (document.getElementById('filterSearch').value || '').toLowerCase();
+  const status = document.getElementById('filterStatus').value;
+  const assignee = document.getElementById('filterAssignee').value;
+  const area = document.getElementById('filterArea').value;
+  const region = document.getElementById('filterRegion').value;
+  const priority = document.getElementById('filterPriority').value;
+  return tasks.filter(t => {
+    if (q && !`${t.taskName} ${t.project} ${t.notes} ${t.assignee}`.toLowerCase().includes(q)) return false;
+    if (status && t.status !== status) return false;
+    if (assignee && t.assignee !== assignee) return false;
+    if (area && t.area !== area) return false;
+    if (region && t.region !== region) return false;
+    if (priority && t.priority !== priority) return false;
+    return true;
+  });
+}
+
+function sortBy(field) {
+  if (sortField === field) sortAsc = !sortAsc;
+  else { sortField = field; sortAsc = true; }
+  renderList();
+}
+
+function renderList() {
+  let rows = getFiltered();
+  rows.sort((a, b) => {
+    let av = a[sortField] || '', bv = b[sortField] || '';
+    if (sortField === 'dueDate') { av = av || 'z'; bv = bv || 'z'; }
+    return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+  const tbody = document.getElementById('listTableBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="11" class="no-results">No tasks match your filters.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(t => {
+    const statusClass = 'status-' + t.status.replace(/ /g,'-');
+    const over = isOverdue(t) ? ' style="color:var(--red);font-weight:600"' : '';
+    return `<tr>
+      <td style="color:var(--gray-500);font-size:11px">${t.id}</td>
+      <td class="td-title">${t.taskName}</td>
+      <td class="td-project">${t.project || '—'}</td>
+      <td>${t.assignee}</td>
+      <td>${t.region}</td>
+      <td${over}>${fmtDate(t.dueDate)}</td>
+      <td><span class="status-badge ${statusClass}">${t.status}</span></td>
+      <td><span class="badge badge-area">${t.area}</span></td>
+      <td><span class="badge badge-priority-${t.priority}">${t.priority}</span></td>
+      <td style="text-align:center">${t.vendor === 'Y' ? '✓' : '—'}</td>
+      <td class="td-actions">
+        <button class="btn-sm edit" onclick="openEditModal('${t.id}')">Edit</button>
+        <button class="btn-sm delete" onclick="deleteTask('${t.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function clearFilters() {
+  document.getElementById('filterSearch').value = '';
+  document.getElementById('filterStatus').value = '';
+  document.getElementById('filterAssignee').value = '';
+  document.getElementById('filterArea').value = '';
+  document.getElementById('filterRegion').value = '';
+  document.getElementById('filterPriority').value = '';
+  renderList();
+}
+
+// ─────────────────────────────────────────────
+//  SPRINT VIEW
+// ─────────────────────────────────────────────
+function renderSprint() {
+  const sprint = tasks.filter(t => t.status !== 'Done' && t.priority !== 'Low');
+  const byAssignee = {};
+  sprint.forEach(t => { if (!byAssignee[t.assignee]) byAssignee[t.assignee] = []; byAssignee[t.assignee].push(t); });
+  const container = document.getElementById('sprintContainer');
+  container.innerHTML = '';
+  Object.entries(byAssignee).sort().forEach(([assignee, atasks]) => {
+    const done = atasks.filter(t => t.status === 'Done').length;
+    const pct = atasks.length ? Math.round(done / atasks.length * 100) : 0;
+    const card = document.createElement('div');
+    card.className = 'sprint-card';
+    card.innerHTML = `
+      <div class="sprint-assignee-header">
+        <div>${assignee} <span style="opacity:0.6;font-weight:400;font-size:11px">(${atasks.length} tasks)</span></div>
+        <div class="sprint-progress">${pct}% complete<div class="sprint-progress-bar"><div class="sprint-progress-fill" style="width:${pct}%"></div></div></div>
+      </div>
+      <table class="tasks-table" style="font-size:12px">
+        <thead><tr>
+          <th>ID</th><th>Task</th><th>Project</th><th>Due Date</th><th>Status</th><th>Priority</th><th>Area</th>
+        </tr></thead>
+        <tbody>${atasks.sort((a,b) => {
+          const po = {High:0,Medium:1,Low:2};
+          return (po[a.priority]||1) - (po[b.priority]||1);
+        }).map(t => {
+          const over = isOverdue(t);
+          const sc = 'status-' + t.status.replace(/ /g,'-');
+          return `<tr>
+            <td style="color:var(--gray-500);font-size:11px">${t.id}</td>
+            <td style="font-weight:500;max-width:240px">${t.taskName}</td>
+            <td style="color:var(--gray-500);font-style:italic">${t.project || '—'}</td>
+            <td style="${over?'color:var(--red);font-weight:600':''}">${fmtDate(t.dueDate)}</td>
+            <td><span class="status-badge ${sc}">${t.status}</span></td>
+            <td><span class="badge badge-priority-${t.priority}">${t.priority}</span></td>
+            <td><span class="badge badge-area">${t.area}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+    container.appendChild(card);
+  });
+  if (!Object.keys(byAssignee).length) container.innerHTML = '<div style="color:var(--gray-500);font-size:13px;padding:24px">No active sprint tasks.</div>';
+}
+
+// ─────────────────────────────────────────────
+//  TEAM
+// ─────────────────────────────────────────────
+function renderTeam() {
+  const grid = document.getElementById('teamGrid');
+  grid.innerHTML = TEAM.map(m => {
+    const assignedName = m.name.split(' ')[0];
+    const tc = tasks.filter(t => t.assignee === assignedName).length;
+    const active = tasks.filter(t => t.assignee === assignedName && t.status === 'In Progress').length;
+    return `<div class="team-card">
+      <div class="team-avatar">${m.initials}</div>
+      <div class="team-name">${m.name}</div>
+      <div class="team-role">${m.role}</div>
+      <div class="team-region">${m.region}</div>
+      <div class="team-task-count">${tc} tasks · ${active} in progress</div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+//  SETUP
+// ─────────────────────────────────────────────
+function renderSetup() {
+  const script = `function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Tasks DB");
+    if (!sheet) sheet = ss.insertSheet("Tasks DB");
+
+    if (data.action === "upsert") {
+      var rows = sheet.getDataRange().getValues();
+      var headers = rows[0];
+      var idCol = headers.indexOf("Task ID");
+      var taskRow = rows.findIndex((r, i) => i > 0 && r[idCol] === data.task.id);
+      var rowData = [
+        data.task.id, data.task.taskName, data.task.project, data.task.assignee,
+        data.task.region, data.task.dueDate, data.task.status, data.task.area,
+        data.task.vendor, data.task.priority, data.task.notes
+      ];
+      if (taskRow > 0) {
+        sheet.getRange(taskRow + 1, 1, 1, rowData.length).setValues([rowData]);
+      } else {
+        sheet.appendRow(rowData);
+      }
+    } else if (data.action === "delete") {
+      var rows = sheet.getDataRange().getValues();
+      var idCol = rows[0].indexOf("Task ID");
+      for (var i = rows.length - 1; i >= 1; i--) {
+        if (rows[i][idCol] === data.id) { sheet.deleteRow(i + 1); break; }
+      }
+    } else if (data.action === "bulk") {
+      // Clear existing data (keep headers)
+      var lastRow = sheet.getLastRow();
+      if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
+      if (data.tasks && data.tasks.length) {
+        var bulk = data.tasks.map(t => [
+          t.id, t.taskName, t.project, t.assignee, t.region, t.dueDate,
+          t.status, t.area, t.vendor, t.priority, t.notes
+        ]);
+        sheet.getRange(2, 1, bulk.length, 11).setValues(bulk);
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({success:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({success:false, error:err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({status:"ok"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+  document.getElementById('appsScriptCode').textContent = script;
+  document.getElementById('inputScriptUrl').value = config.scriptUrl || '';
+  document.getElementById('inputCsvUrl').value = config.csvUrl || '';
+  updateConfigStatus();
+}
+
+function saveScriptUrl() {
+  config.scriptUrl = document.getElementById('inputScriptUrl').value.trim();
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+  updateConfigStatus();
+  showToast('Apps Script URL saved!', 'success');
+}
+
+function saveCsvUrl() {
+  config.csvUrl = document.getElementById('inputCsvUrl').value.trim();
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+  updateConfigStatus();
+  showToast('CSV URL saved!', 'success');
+}
+
+function updateConfigStatus() {
+  const scriptEl = document.getElementById('statusScriptUrl');
+  const csvEl = document.getElementById('statusCsvUrl');
+  if (scriptEl) scriptEl.innerHTML = config.scriptUrl
+    ? '<span style="color:var(--green)">✓ Connected</span>'
+    : '<span style="color:var(--gray-500);font-style:italic">Not configured — tasks will save locally only</span>';
+  if (csvEl) {
+    const sid = config.csvUrl ? extractSheetId(config.csvUrl) : null;
+    csvEl.innerHTML = sid
+      ? `<span style="color:var(--green)">✓ Sheet ID found (${sid.slice(0,12)}…) — click "Load Sheet" in the header to sync</span>`
+      : config.csvUrl
+        ? '<span style="color:var(--red)">⚠ Could not find a Sheet ID in this URL — paste the full Google Sheets share link</span>'
+        : '<span style="color:var(--gray-500);font-style:italic">Not configured — using local data</span>';
+  }
+}
+
+// ─────────────────────────────────────────────
+//  MODAL — ADD / EDIT
+// ─────────────────────────────────────────────
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add New Task';
+  document.getElementById('f-taskName').value = '';
+  document.getElementById('f-project').value = '';
+  document.getElementById('f-assignee').value = 'Harsh';
+  document.getElementById('f-region').value = 'India';
+  document.getElementById('f-dueDate').value = '';
+  document.getElementById('f-status').value = 'Not Started';
+  document.getElementById('f-area').value = 'Reporting';
+  document.getElementById('f-priority').value = 'Medium';
+  document.getElementById('f-vendor').value = 'N';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('taskModal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Task — ' + id;
+  document.getElementById('f-taskName').value = t.taskName;
+  document.getElementById('f-project').value = t.project || '';
+  document.getElementById('f-assignee').value = t.assignee;
+  document.getElementById('f-region').value = t.region;
+  document.getElementById('f-dueDate').value = t.dueDate || '';
+  document.getElementById('f-status').value = t.status;
+  document.getElementById('f-area').value = t.area;
+  document.getElementById('f-priority').value = t.priority;
+  document.getElementById('f-vendor').value = t.vendor;
+  document.getElementById('f-notes').value = t.notes || '';
+  document.getElementById('taskModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('taskModal').classList.remove('open');
+}
+
+function saveTask() {
+  const taskName = document.getElementById('f-taskName').value.trim();
+  if (!taskName) { showToast('Task Name is required', 'error'); return; }
+  const taskData = {
+    id: editingId || nextId(),
+    taskName,
+    project: document.getElementById('f-project').value.trim(),
+    assignee: document.getElementById('f-assignee').value,
+    region: document.getElementById('f-region').value,
+    dueDate: document.getElementById('f-dueDate').value,
+    status: document.getElementById('f-status').value,
+    area: document.getElementById('f-area').value,
+    priority: document.getElementById('f-priority').value,
+    vendor: document.getElementById('f-vendor').value,
+    notes: document.getElementById('f-notes').value.trim(),
+  };
+  if (editingId) {
+    const idx = tasks.findIndex(t => t.id === editingId);
+    if (idx >= 0) tasks[idx] = taskData;
+  } else {
+    tasks.push(taskData);
+  }
+  saveTasks();
+  closeModal();
+  showToast(editingId ? 'Task updated!' : 'Task added!', 'success');
+  syncTaskToSheet(taskData);
+  renderView(getActiveView());
+}
+
+function deleteTask(id) {
+  if (!confirm('Delete this task? This cannot be undone.')) return;
+  tasks = tasks.filter(t => t.id !== id);
+  saveTasks();
+  showToast('Task deleted', 'success');
+  if (config.scriptUrl) {
+    fetch(config.scriptUrl, {method:'POST', body:JSON.stringify({action:'delete', id}), mode:'no-cors'});
+  }
+  renderView(getActiveView());
+}
+
+// ─────────────────────────────────────────────
+//  MODAL — STATUS CHANGE (from Kanban click)
+// ─────────────────────────────────────────────
+function openStatusModal(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  statusChangeId = id;
+  document.getElementById('statusModalTaskName').textContent = t.taskName;
+  document.getElementById('statusModalSelect').value = t.status;
+  document.getElementById('statusModal').classList.add('open');
+}
+
+function confirmStatusChange() {
+  const t = tasks.find(t => t.id === statusChangeId);
+  if (!t) return;
+  t.status = document.getElementById('statusModalSelect').value;
+  saveTasks();
+  document.getElementById('statusModal').classList.remove('open');
+  showToast('Status updated to "' + t.status + '"', 'success');
+  syncTaskToSheet(t);
+  renderView(getActiveView());
+}
+
+// ─────────────────────────────────────────────
+//  GOOGLE SHEETS SYNC
+// ─────────────────────────────────────────────
+function syncTaskToSheet(task) {
+  if (!config.scriptUrl) return;
+  fetch(config.scriptUrl, {
+    method: 'POST',
+    body: JSON.stringify({action: 'upsert', task}),
+    mode: 'no-cors'
+  }).catch(() => {});
+}
+
+function exportAllToSheet() {
+  if (!config.scriptUrl) {
+    showToast('Apps Script URL not configured. Go to Setup step 6.', 'error');
+    return;
+  }
+  const el = document.getElementById('exportStatus');
+  el.textContent = 'Pushing tasks to Google Sheet…';
+  fetch(config.scriptUrl, {
+    method: 'POST',
+    body: JSON.stringify({action: 'bulk', tasks}),
+    mode: 'no-cors'
+  }).then(() => {
+    el.innerHTML = '<span style="color:var(--green)">✓ Done! Check your Google Sheet.</span>';
+    showToast('All tasks pushed to Google Sheet!', 'success');
+  }).catch(e => {
+    el.innerHTML = '<span style="color:var(--red)">Error — check your Apps Script URL and try again.</span>';
+  });
+}
+
+// Extract sheet ID from any Google Sheets URL the user pastes
+function extractSheetId(url) {
+  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/);
+  return m ? m[1] : null;
+}
+
+// Build the gviz CSV URL — works from file://, no "Publish to web" needed, just "Anyone with link can view"
+function buildGvizUrl(sheetId) {
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Tasks%20DB&t=${Date.now()}`;
+}
+
+async function syncFromSheet() {
+  if (!config.csvUrl) {
+    showToast('Sheet URL not configured. Go to Setup → Step 5.', 'error');
+    showView('setup');
+    return;
+  }
+
+  const sheetId = extractSheetId(config.csvUrl);
+  if (!sheetId) {
+    showToast('Could not read the Sheet ID from your URL. Paste the full Google Sheets link.', 'error');
+    showView('setup');
+    return;
+  }
+
+  const fetchUrl = buildGvizUrl(sheetId);
+  document.getElementById('syncStatus').textContent = '⟳ Loading…';
+  document.getElementById('syncStatus').className = 'sync-indicator';
+
+  try {
+    const res = await fetch(fetchUrl);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const csv = await res.text();
+    // gviz wraps response in /*O_o*/\ngoogle.visualization.Query.setResponse({...}) for JSON
+    // but tqx=out:csv gives raw CSV — double-check it isn't an error page
+    if (csv.trim().startsWith('<!') || csv.trim().startsWith('google.')) {
+      throw new Error('Sheet not public or Tasks DB tab not found');
+    }
+    const rows = parseCSV(csv);
+    if (rows.length < 2) {
+      showToast('Sheet appears empty or the "Tasks DB" tab has no data yet.', 'error');
+      document.getElementById('syncStatus').textContent = '✗ Empty';
+      document.getElementById('syncStatus').className = 'sync-indicator err';
+      return;
+    }
+    const headers = rows[0].map(h => h.trim());
+    const idxOf = (name) => headers.findIndex(h => h.toLowerCase() === name.toLowerCase());
+    const loaded = rows.slice(1).filter(r => r[0] && r[0].trim()).map(r => ({
+      id:       r[idxOf('Task ID')]       || '',
+      taskName: r[idxOf('Task Name')]     || '',
+      project:  r[idxOf('Project')]       || '',
+      assignee: r[idxOf('Assignee')]      || '',
+      region:   r[idxOf('Region')]        || '',
+      dueDate:  r[idxOf('Due Date')]      || '',
+      status:   r[idxOf('Status')]        || 'Not Started',
+      area:     r[idxOf('Area')]          || '',
+      vendor:   r[idxOf('Vendor Involved')] || 'N',
+      priority: r[idxOf('Priority')]      || 'Medium',
+      notes:    r[idxOf('Notes')]         || '',
+    }));
+    tasks = loaded;
+    saveTasks();
+    document.getElementById('syncStatus').textContent = '✓ Synced';
+    document.getElementById('syncStatus').className = 'sync-indicator ok';
+    showToast(`Loaded ${tasks.length} tasks from Google Sheet ✓`, 'success');
+    renderView(getActiveView());
+  } catch(e) {
+    document.getElementById('syncStatus').textContent = '✗ Sync failed';
+    document.getElementById('syncStatus').className = 'sync-indicator err';
+    showToast('Could not load sheet. Make sure sharing is set to "Anyone with the link can view". See Setup → Step 5.', 'error');
+    console.error('Sync error:', e);
+  }
+}
+
+function parseCSV(text) {
+  const rows = [];
+  const lines = text.split(/\r?\n/);
+  lines.forEach(line => {
+    if (!line.trim()) return;
+    const row = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') { inQ = !inQ; }
+      else if (line[i] === ',' && !inQ) { row.push(cur); cur = ''; }
+      else { cur += line[i]; }
+    }
+    row.push(cur);
+    rows.push(row);
+  });
+  return rows;
+}
+
+// ─────────────────────────────────────────────
+//  TOAST
+// ─────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────
+function getActiveView() {
+  const views = ['dashboard','kanban','list','sprint','team','setup'];
+  return views.find(v => document.getElementById('view-'+v).classList.contains('active')) || 'dashboard';
+}
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+loadTasks();
+renderView('dashboard');
+updateConfigStatus();
+</script>
+</body>
+</html>
